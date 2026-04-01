@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa das Árvores Frutíferas · Ifes Cachoeiro</title>
+    <!-- Leaflet CSS/JS (mapa leve e open-source) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Fontes e estilo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            background: #e7f0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0, 40, 0, 0.2);
+            overflow: hidden;
+            padding: 1.5rem 1.5rem 1rem 1.5rem;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        .ifes-titulo {
+            background: #1e3e2b;
+            color: white;
+            padding: 0.5rem 1.8rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 1.3rem;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 8px rgba(0,30,0,0.3);
+        }
+        .ifes-titulo::before {
+            content: "🌳";
+            font-size: 1.8rem;
+        }
+        .subtitulo {
+            color: #1f4f2b;
+            font-weight: 500;
+            background: #e0f0da;
+            padding: 0.5rem 1.5rem;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            border: 1px dashed #2f6b3a;
+        }
+        .map-info {
+            display: flex;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.2rem;
+            background: #f4faf0;
+            padding: 1rem 1.5rem;
+            border-radius: 28px;
+            align-items: center;
+        }
+        .rodovia {
+            background: #c7d9bf;
+            padding: 0.3rem 1.2rem;
+            border-radius: 30px;
+            font-weight: 600;
+            color: #172e1a;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .rodovia::before {
+            content: "🛣️";
+        }
+        .incubador {
+            background: #b8d9b0;
+            padding: 0.3rem 1.2rem;
+            border-radius: 30px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .diferro {
+            background: #a6c89a;
+            padding: 0.3rem 1.2rem;
+            border-radius: 30px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .map-wrapper {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+        }
+        #mapid {
+            height: 580px;
+            width: 68%;
+            min-width: 480px;
+            border-radius: 28px;
+            box-shadow: 0 8px 18px rgba(0,20,0,0.3);
+            border: 3px solid #1e4e2b;
+            background: #cbe3c0;
+            flex: 3;
+        }
+        .painel-arvores {
+            flex: 1.2;
+            min-width: 260px;
+            background: #f4fff0;
+            border-radius: 28px;
+            padding: 1.5rem 1rem;
+            box-shadow: inset 0 0 0 1px #bcddb0, 0 10px 15px -8px #2b5a2b;
+            max-height: 580px;
+            overflow-y: auto;
+        }
+        .painel-arvores h3 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 3px solid #419653;
+            padding-bottom: 0.6rem;
+            margin-bottom: 1rem;
+            color: #1f4a28;
+        }
+        .arvore-item {
+            background: white;
+            border-radius: 40px;
+            padding: 0.5rem 1rem 0.5rem 1.2rem;
+            margin-bottom: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #adcf9f;
+            box-shadow: 0 2px 4px rgba(0,20,0,0.1);
+            transition: 0.1s ease;
+            cursor: pointer;
+        }
+        .arvore-item:hover {
+            background: #e6ffd9;
+            border-color: #367a3a;
+            transform: scale(1.01);
+        }
+        .arvore-nome {
+            font-weight: 700;
+            color: #1c4d1c;
+            text-transform: capitalize;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .arvore-local {
+            font-size: 0.8rem;
+            background: #deedd6;
+            padding: 0.2rem 1rem;
+            border-radius: 30px;
+            color: #1f4821;
+            max-width: 140px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .contador {
+            background: #1e562b;
+            color: white;
+            border-radius: 30px;
+            padding: 0.2rem 0.9rem;
+            font-size: 0.85rem;
+            margin-left: 6px;
+        }
+        .legenda {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            background: #e2f0da;
+            border-radius: 40px;
+            padding: 0.8rem 2rem;
+            justify-content: center;
+            color: #1b4b21;
+            font-weight: 500;
+        }
+        .legenda span::before {
+            content: "🍋";
+            margin-right: 5px;
+            font-size: 1.2rem;
+        }
+        .legenda .destaque {
+            background: #31743e;
+            color: white;
+            padding: 0.2rem 1.2rem;
+            border-radius: 30px;
+        }
+        footer {
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            color: #205a2d;
+        }
+        .emoji-fruta {
+            font-size: 1.3rem;
+            filter: drop-shadow(0 2px 2px #9bbc8b);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="ifes-titulo">Ifes · Campus Cachoeiro de Itapemirim</div>
+        <div class="subtitulo">🌿 Acervo de árvores frutíferas</div>
+    </div>
+
+    <!-- elementos dos mapas .png -->
+    <div class="map-info">
+        <div class="rodovia">ES-164 · ES-482 · Rod. Eng. Fabiano Vitacqia</div>
+        <div class="incubador">🧪 Núcleo Incubador</div>
+        <div class="diferro">🔩 Diferro Comércio de Ferragens · acesso recente</div>
+    </div>
+
+    <!-- corpo: mapa + lista interativa -->
+    <div class="map-wrapper">
+        <div id="mapid"></div>
+        <div class="painel-arvores" id="painel-arvores">
+            <h3>🌳 Frutíferas <span class="contador" id="total-count">0</span></h3>
+            <div id="arvore-lista-container">
+                <!-- preenchido via js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- mini legenda dicas -->
+    <div class="legenda">
+        <span>🥭 Manga</span> <span>🍊 Laranja</span> <span>🍋 Limão</span> <span>🍓 Amora</span>
+        <span>🥥 Coqueiro</span> <span>🍈 Goiaba</span> <span class="destape">clique na lista para localizar</span>
+    </div>
+    <footer>🌱 Dados extraídos de trabalho.csv · coordenadas aproximadas · mapa interativo Leaflet</footer>
+</div>
+
+<script>
+    (function() {
+        // ---------- DADOS EMBUTIDOS DO ARQUIVO trabalho.csv (limpeza manual) ----------
+        const arvoresData = [
+            { nome: "Coqueiro", local: "Bloco 2 atrás", lat: -20.803075571511812, lng: -41.1547597338007 },
+            { nome: "Acerola", local: "Bloco 0 atrás", lat: -20.80365443018951, lng: -41.15488199509244 },
+            { nome: "Acerola", local: "Perto do Galpão", lat: -20.8036999983438, lng: -41.154308776222365 },
+            { nome: "Limão", local: "Bloco 0 atrás", lat: -20.803635212907782, lng: -41.155118691102565 },
+            { nome: "Mexirica", local: "Bloco 0 atrás", lat: -20.80362150823561, lng: -41.1550386222784 },
+            { nome: "Laranja", local: "Bloco 0 atrás", lat: -20.803629941880178, lng: -41.15509049785461 },
+            { nome: "Goiaba", local: "Bloco 0 atrás", lat: -20.80364575496245, lng: -41.15478713850672 },
+            { nome: "Coqueiro", local: "Bloco 0 atrás", lat: -20.803643646551585, lng: -41.1544758850494 },
+            { nome: "Amora", local: "Perto do Galpão", lat: -20.803700573634718, lng: -41.154424009467014 },
+            { nome: "Manguaba", local: "Perto do Galpão", lat: -20.80358215349191, lng: -41.15426921364132 },
+            { nome: "Acerola", local: "Bloco 5 atrás", lat: -20.802964720169925, lng: -41.15408682342513 },
+            { nome: "Acerola", local: "Bloco 5 atrás", lat: -20.8028586858666, lng: -41.154156907345204 },
+            { nome: "Limão", local: "Bloco 5 atrás", lat: -20.80280422191306, lng: -41.15412272919814 },
+            { nome: "Goiaba", local: "Bloco 7 atrás", lat: -20.80268144809763, lng: -41.154048727198685 },
+            { nome: "Limão", local: "Bloco 7 atrás", lat: -20.802737806582687, lng: -41.154091152757196 },
+            { nome: "Jambo", local: "Bloco 7 meio", lat: -20.802560310883635, lng: -41.154089181573966 },
+            { nome: "Goiaba", local: "Bloco 9 atrás", lat: -20.8024526519419, lng: -41.15390522902338 },
+            { nome: "Jeriva", local: "Bloco 8 atrás", lat: -20.802445789636185, lng: -41.154650506795676 },
+            { nome: "Manga", local: "Bloco 6 atrás", lat: -20.802551651055015, lng: -41.15478316917733 },
+            { nome: "Jambo", local: "Bloco 6 meio", lat: -20.802669282805073, lng: -41.15474749157326 },
+            { nome: "Jambo", local: "Bloco 9 meio", lat: -20.80255979995901, lng: -41.15409987645347 },
+            { nome: "Goiaba", local: "Quadra entrada", lat: -20.80203952283991, lng: -41.154779816396825 },
+            { nome: "Banana", local: "Estacionamento entrada", lat: -20.80175015240669, lng: -41.15472543205228 },
+            { nome: "Amendoeiro", local: "Estacionamento entrada", lat: -20.802637131495043, lng: -41.15516397324799 },
+            { nome: "Coco", local: "Entrada", lat: -20.80274933555096, lng: -41.15527662602812 },
+            { nome: "Manga calotinha", local: "Entrada", lat: -20.802801363096012, lng: -41.15566554631528 },
+            { nome: "Manga calotinha", local: "Entrada", lat: -20.80263462414219, lng: -41.15558440950004 },
+            { nome: "Carambola", local: "Entrada", lat: -20.802770648040248, lng: -41.15550394323 }
+        ];
+
+        // normalizar nomes (capitalizar)
+        const formattedTrees = arvoresData.map((item, idx) => ({
+            id: idx,
+            nome: item.nome.charAt(0).toUpperCase() + item.nome.slice(1).toLowerCase(),
+            local: item.local,
+            lat: item.lat,
+            lng: item.lng
+        }));
+
+        // Inicializar mapa centrado na média das coordenadas (aproximadamente Ifes)
+        const map = L.map('mapid').setView([-20.8030, -41.1545], 17);
+
+        // Camada de satélite / ruas (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors, Ifes Cachoeiro',
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Grupo de marcadores
+        const markersLayer = L.layerGroup().addTo(map);
+
+        // Ícones personalizados por tipo de fruta (emojis via Leaflet DivIcon)
+        function getIconForFruit(nome) {
+            let emoji = '🍍'; // padrão
+            const lower = nome.toLowerCase();
+            if (lower.includes('acerola')) emoji = '🍒';
+            else if (lower.includes('limão')) emoji = '🍋';
+            else if (lower.includes('laranja')) emoji = '🍊';
+            else if (lower.includes('goiaba')) emoji = '🍈';
+            else if (lower.includes('jambo')) emoji = '🍑';
+            else if (lower.includes('manga')) emoji = '🥭';
+            else if (lower.includes('coqueiro') || lower.includes('coco')) emoji = '🥥';
+            else if (lower.includes('amora')) emoji = '🍇';
+            else if (lower.includes('mexirica')) emoji = '🍊';
+            else if (lower.includes('banana')) emoji = '🍌';
+            else if (lower.includes('amendoeiro')) emoji = '🌰';
+            else if (lower.includes('carambola')) emoji = '⭐';
+            else if (lower.includes('jeriva')) emoji = '🌴';
+            else if (lower.includes('manguaba')) emoji = '🥭';
+            return L.divIcon({
+                html: `<div style="font-size:1.9rem; filter: drop-shadow(0 2px 3px #194d23); transform: rotate(0deg);">${emoji}</div>`,
+                className: 'fruta-emoji-icon',
+                iconSize: [30, 30],
+                iconAnchor: [15, 25],
+                popupAnchor: [0, -20]
+            });
+        }
+
+        // Guardar referência dos marcadores para dar zoom
+        const markersRef = [];
+
+        // Adicionar cada árvore
+        formattedTrees.forEach((tree) => {
+            const icon = getIconForFruit(tree.nome);
+            const marker = L.marker([tree.lat, tree.lng], { icon })
+                .bindPopup(`
+                    <b style="font-size:1.2rem;color:#1e5a2b;">${tree.nome}</b><br>
+                    <span style="background:#c7e6b5;padding:3px 10px;border-radius:20px;">📍 ${tree.local}</span>
+                `);
+            marker.addTo(markersLayer);
+            markersRef.push({
+                id: tree.id,
+                marker,
+                nome: tree.nome,
+                local: tree.local,
+                lat: tree.lat,
+                lng: tree.lng
+            });
+        });
+
+        // Atualizar contador total
+        document.getElementById('total-count').innerText = formattedTrees.length;
+
+        // Renderizar lista no painel
+        const listaContainer = document.getElementById('arvore-lista-container');
+        function renderLista() {
+            let htmlStr = '';
+            formattedTrees.forEach((tree) => {
+                const nomeDisplay = tree.nome;
+                // Emoji ilustrativo pequeno
+                let smallEmoji = '🍐';
+                const lower = tree.nome.toLowerCase();
+                if (lower.includes('acerola')) smallEmoji = '🍒';
+                else if (lower.includes('limão')) smallEmoji = '🍋';
+                else if (lower.includes('laranja')||lower.includes('mexirica')) smallEmoji = '🍊';
+                else if (lower.includes('goiaba')) smallEmoji = '🍈';
+                else if (lower.includes('jambo')) smallEmoji = '🍑';
+                else if (lower.includes('manga')) smallEmoji = '🥭';
+                else if (lower.includes('coqueiro')||lower.includes('coco')) smallEmoji = '🥥';
+                else if (lower.includes('amora')) smallEmoji = '🍇';
+                else if (lower.includes('banana')) smallEmoji = '🍌';
+                else if (lower.includes('amendoeiro')) smallEmoji = '🌰';
+                else if (lower.includes('carambola')) smallEmoji = '⭐';
+                else if (lower.includes('jeriva')) smallEmoji = '🌴';
+                else smallEmoji = '🍍';
+
+                htmlStr += `
+                    <div class="arvore-item" data-id="${tree.id}">
+                        <div class="arvore-nome"><span class="emoji-fruta">${smallEmoji}</span> ${tree.nome}</div>
+                        <div class="arvore-local" title="${tree.local}">${tree.local}</div>
+                    </div>
+                `;
+            });
+            listaContainer.innerHTML = htmlStr;
+
+            // Adicionar evento de clique em cada item para centralizar mapa
+            document.querySelectorAll('.arvore-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const id = parseInt(item.getAttribute('data-id'), 10);
+                    const target = markersRef.find(m => m.id === id);
+                    if (target) {
+                        map.setView([target.lat, target.lng], 19);
+                        target.marker.openPopup();
+                    }
+                });
+            });
+        }
+        renderLista();
+
+        // Adicionar alguns elementos gráficos dos mapas (overlay de texto) como retângulos simbólicos (opcional)
+        // Para homenagear os arquivos .png: destacar áreas dos blocos mencionados.
+        var boundsIfes = L.latLngBounds(L.latLng(-20.804, -41.156), L.latLng(-20.8015, -41.153));
+        L.rectangle(boundsIfes, {color: "#3f7842", weight: 2, fill: false, dashArray: '5, 8'}).addTo(map).bindTooltip('Ifes Campus Cachoeiro', {sticky:true});
+
+        // Representar rodovia ES-164/482 como linha (aproximada)
+        var latlngs = [
+            [-20.8035, -41.1565],
+            [-20.8023, -41.1532],
+            [-20.8013, -41.1515]
+        ];
+        L.polyline(latlngs, {color: '#a6561c', weight: 4, opacity: 0.7}).addTo(map).bindTooltip('Rod. Eng. Fabiano Vitacqia (ES-164/482)');
+
+        // Núcleo Incubador (círculo)
+        L.circle([-20.8033, -41.1549], {radius: 12, color: '#6a329f', fillColor: '#c7a6ff', fillOpacity: 0.5}).addTo(map).bindTooltip('Núcleo Incubador');
+        // Diferro
+        L.marker([-20.8029, -41.1560], {icon: L.divIcon({html:'🔩', className:'', iconSize:[20,20]})}).addTo(map).bindTooltip('Diferro Ferragens');
+
+        // Ajustar zoom inicial para cobrir todas árvores
+        const group = new L.featureGroup(markersRef.map(m => m.marker));
+        map.fitBounds(group.getBounds().pad(0.1));
+
+    })();
+</script>
+</body>
+</html>
